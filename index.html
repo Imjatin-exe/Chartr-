@@ -28,6 +28,16 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
 
 .screen { display:none; width:100%; }
 .screen.active { display:block; width:100%; }
+@keyframes slideInRight {
+  from { opacity:0; transform:translateX(40px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity:0; transform:translateX(-40px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+.slide-forward { animation:slideInRight 0.1s ease-out; }
+.slide-back    { animation:slideInLeft  0.1s ease-out; }
 
 /* SECTION LABEL */
 .section-label { font-size:11px; font-weight:800; color:#999; letter-spacing:1.2px; text-transform:uppercase; display:flex; align-items:center; gap:10px; padding:16px 4% 10px; }
@@ -246,8 +256,8 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
 <div id="screen-ticket" class="screen">
   <div class="ticket-screen" id="ticketScreen">
     <div class="ticket-topbar">
-      <button class="ticket-topbar-x" onclick="showScreen('home')">✕ <span>Ticket</span></button>
-      <button class="ticket-topbar-all" onclick="showSavedTickets()">All tickets</button>
+      <button class="ticket-topbar-x" onclick="showScreen('home',true)">✕ <span>Ticket</span></button>
+      <button class="ticket-topbar-all" onclick="showSavedTickets(false)">All tickets</button>
     </div>
     <div class="ticket-center">
       <div class="ticket-card">
@@ -280,7 +290,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
 <div id="screen-saved" class="screen">
   <div class="saved-screen">
     <div class="saved-topbar">
-      <button class="saved-back" onclick="showScreen('home')">←</button>
+      <button class="saved-back" onclick="showScreen('home',true)">←</button>
       <span class="saved-title">All Bookings</span>
     </div>
     <div class="booking-tabs">
@@ -304,7 +314,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
 <div id="screen-buspass" class="screen">
   <div style="background:white;min-height:100vh;min-height:100dvh;">
     <div style="display:flex;align-items:center;gap:14px;padding:16px 16px 12px;border-bottom:1px solid #F0F0F0;">
-      <button onclick="showScreen('home')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#111;">←</button>
+      <button onclick="showScreen('home',true)" style="background:none;border:none;font-size:22px;cursor:pointer;color:#111;">←</button>
       <span style="font-size:17px;font-weight:600;color:#111;font-family:'Nunito',sans-serif;">DTC Bus Pass</span>
     </div>
     <div style="padding:20px 16px;">
@@ -338,7 +348,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
 <div id="screen-passenger" class="screen">
   <div style="background:#F8F8F8;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;">
     <div style="display:flex;align-items:center;gap:14px;padding:16px 16px 12px;border-bottom:1px solid #EBEBEB;background:white;">
-      <button onclick="showScreen('buspass')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#111;">←</button>
+      <button onclick="showScreen('buspass',true)" style="background:none;border:none;font-size:22px;cursor:pointer;color:#111;">←</button>
       <span style="font-size:17px;font-weight:600;color:#111;font-family:'Nunito',sans-serif;">Passenger Details</span>
     </div>
     <div style="padding:20px 16px;flex:1;">
@@ -431,7 +441,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
 </div>
 
 <script>
-var BUS_COLOURS={'B':'#1BBABE','R':'#E53935','G':'#01C840','O':'#F28526','L':'#3288F5'};
+var BUS_COLOURS={'B':'#3288F5','R':'#E53935','G':'#01C840','O':'#F28526','L':'#1BBABE'};
 var savedTickets=[];
 var selectedPass={};
 var helpTapCount=0, helpTapTimer=null;
@@ -480,13 +490,19 @@ function togglePwVis(){
   if(i.type==='password'){i.type='text';e.textContent='🙈';}else{i.type='password';e.textContent='👁️';}
 }
 
-function showScreen(name){
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-  document.getElementById('screen-'+name).classList.add('active');
+function showScreen(name, back){
+  document.querySelectorAll('.screen').forEach(function(s){
+    s.classList.remove('active','slide-forward','slide-back');
+  });
+  var el = document.getElementById('screen-'+name);
+  el.classList.add('active');
+  el.classList.add(back ? 'slide-back' : 'slide-forward');
+  // Re-trigger animation
+  void el.offsetWidth;
   window.scrollTo(0,0);
 }
 
-function showSavedTickets(){renderSavedList();showScreen('saved');}
+function showSavedTickets(back){renderSavedList();showScreen('saved',back);}
 
 function switchTab(tab){
   document.querySelectorAll('.b-tab').forEach(function(t){t.classList.remove('active');});
@@ -507,7 +523,7 @@ function openModal(page){
     '<div class="tp-field"><label class="tp-label">Bus DL number</label><input class="tp-input" id="tp-dl" type="text" placeholder="e.g. DL51EV4375"></div>'+
     '<div class="tp-field"><label class="tp-label">Bus Colour</label><input class="tp-input" id="tp-colour" type="text" placeholder="B/R/G/O/L" maxlength="1" oninput="this.value=this.value.toUpperCase()"></div>'+
     '</div>'+
-    '<div class="tp-hint">B=Light Blue | R=Red | G=Green | O=Orange | L=Dark Blue (Electric)</div>'+
+    '<div class="tp-hint">B=Dark Blue | R=Red | G=Green | O=Orange | L=Light Blue (Electric)</div>'+
     '<div class="tp-actions"><button class="tp-btn" onclick="closeModal()">CANCEL</button><button class="tp-btn pay" onclick="proceedToPay()">PROCEED TO PAY</button></div>'+
     '<div class="tp-bottom"><span class="tp-rupee">₹</span><span class="tp-amount" id="tp-total">0.0</span><button class="tp-watch">WATCH ADS</button></div>';
   } else if(page==='metro-ticket'){
