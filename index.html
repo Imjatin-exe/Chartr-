@@ -26,6 +26,10 @@ html { height:100%; width:100%; }
   --code-size:12px;
   --code-weight:400;
   --code-color:#757575;
+  --card-max-width:min(360px,calc(100vw - 32px));
+  --card-inner-padding:16px;
+  --card-min-height:auto;
+  --card-max-height:none;
 }
 body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-height:100vh; min-height:100dvh; overflow-x:hidden; }
 
@@ -114,8 +118,8 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
 .ticket-topbar-x span { font-size:16px; font-weight:700; font-family:'Nunito',sans-serif; }
 .ticket-topbar-all { color:white; font-size:15px; font-weight:700; font-family:'Nunito',sans-serif; cursor:pointer; background:none; border:none; }
 .ticket-center { flex:1; display:flex; align-items:center; justify-content:center; padding:20px 16px; }
-.ticket-card { background:#fff; border-radius:var(--t-card-radius); width:100%; max-width:min(360px,calc(100vw - 32px)); box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; }
-.ticket-card-body { padding:16px 16px 14px; }
+.ticket-card { background:#fff; border-radius:var(--t-card-radius); width:100%; max-width:var(--card-max-width); min-height:var(--card-min-height); max-height:var(--card-max-height); box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; }
+.ticket-card-body { padding:var(--card-inner-padding); }
 .t-heading { text-align:center; font-size:var(--t-heading-size); font-weight:var(--t-heading-weight); color:var(--t-heading-color); margin-bottom:12px; font-family:'Roboto',sans-serif; }
 .t-row1 { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:8px; border-bottom:1px solid #E0E0E0; margin-bottom:12px; }
 .t-dl  { font-size:var(--t-dl-size); font-weight:var(--t-dl-weight); color:var(--t-dl-color); font-family:'Roboto',sans-serif; }
@@ -260,7 +264,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
   <div class="ticket-screen" id="ticketScreen">
     <div class="ticket-topbar">
       <button class="ticket-topbar-x" onclick="showScreen('home',true)">✕ <span>Ticket</span></button>
-      <button class="ticket-topbar-all" onclick="showSavedTickets(false)">All tickets</button>
+      <div style="display:flex;align-items:center;gap:12px;"><span style="color:white;font-size:15px;font-weight:700;font-family:'Nunito',sans-serif;">⚠️ Issue with ticket?</span><button class="ticket-topbar-all" onclick="showSavedTickets(false)">All tickets</button></div>
     </div>
     <div class="ticket-center">
       <div class="ticket-card">
@@ -422,7 +426,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); width:100%; min-he
     <div class="dev-row"><span class="dev-lbl">Weight <span class="dev-cur" id="cur-fw"></span></span><input type="range" min="300" max="900" step="25" id="d-fw" oninput="applyDev()"></div>
     <div class="dev-row"><span class="dev-lbl">Color</span><input type="color" id="d-fc" oninput="applyDev()" class="dev-color"></div>
     <div class="dev-section">Card Style</div>
-    <div class="dev-row"><span class="dev-lbl">Corner Radius <span class="dev-cur" id="cur-cr"></span></span><input type="range" min="0" max="24" step="1" id="d-cr" oninput="applyDev()"></div>
+    <div class="dev-row"><span class="dev-lbl">Corner Radius <span class="dev-cur" id="cur-cr"></span></span><input type="range" min="0" max="50" step="1" id="d-cr" oninput="applyDev()"></div>
     <div class="dev-section">Ticket Code (T13042026c5b75539ed)</div>
     <div class="dev-row"><span class="dev-lbl">Size <span class="dev-cur" id="cur-cs"></span></span><input type="range" min="8" max="20" step="1" id="d-cs" oninput="applyDev()"></div>
     <div class="dev-row"><span class="dev-lbl">Weight <span class="dev-cur" id="cur-cw"></span></span><input type="range" min="300" max="900" step="25" id="d-cw" oninput="applyDev()"></div>
@@ -475,6 +479,12 @@ try{var st=localStorage.getItem('chartr_tickets');if(st)savedTickets=JSON.parse(
     r.setProperty('--code-size',(d.cs||12)+'px');
     r.setProperty('--code-weight',d.cw||400);
     r.setProperty('--code-color',d.cc||'#757575');
+    r.setProperty('--card-max-width','min('+(d.cwd||90)+'vw, calc(100vw - 32px))');
+    r.setProperty('--card-inner-padding',(d.cpd||16)+'px');
+    var cht = d.cht||0;
+    var cmh = d.cmh||0;
+    r.setProperty('--card-min-height', cht==0 ? 'auto' : cht+'vh');
+    r.setProperty('--card-max-height', cmh==0 ? 'none' : cmh+'vh');
   }catch(e){}
 })();
 
@@ -574,17 +584,21 @@ function proceedToPay(){
   if(!fare){alert('Please enter Fare');return;}
   if(!from){alert('Please enter Starting stop');return;}
   if(!to){alert('Please enter Ending stop');return;}
+  // Single ticket discount lookup
   var discTable=[[5,4.62],[10,9.25],[15,13.75],[20,18.29],[25,22.79]];
-  var discFare,found=false;
-  for(var di=0;di<discTable.length;di++){if(fare===discTable[di][0]){discFare=String(discTable[di][1]);found=true;break;}}
+  var singleDisc,found=false;
+  for(var di=0;di<discTable.length;di++){if(fare===discTable[di][0]){singleDisc=discTable[di][1];found=true;break;}}
   if(!found){
     var lo=discTable[0],hi=discTable[discTable.length-1];
     for(var di=0;di<discTable.length-1;di++){if(fare>=discTable[di][0]&&fare<=discTable[di+1][0]){lo=discTable[di];hi=discTable[di+1];break;}}
     if(fare<discTable[0][0]){lo=[0,0];hi=discTable[0];}
     if(fare>discTable[discTable.length-1][0]){lo=discTable[discTable.length-2];hi=discTable[discTable.length-1];}
     var t=(fare-lo[0])/(hi[0]-lo[0]);
-    discFare=String(Math.round((lo[1]+t*(hi[1]-lo[1]))*100)/100);
+    singleDisc=Math.round((lo[1]+t*(hi[1]-lo[1]))*100)/100;
   }
+  // Multiply by number of tickets
+  var totalDisc = Math.round(singleDisc * tickets * 100) / 100;
+  var discFare = totalDisc.toFixed(2);
   var stripColour=BUS_COLOURS[colour]||'#1BBABE';
   var now=new Date();
   var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -699,44 +713,48 @@ function handleHelpTap(){
 }
 
 // Dev Panel
-var DEV_DEFAULTS={hs:19,hw:600,hc:'#212121',ds:14,dw:400,dc:'#212121',ls:15,lw:400,lc:'#212121',vs:16,vw:500,vc:'#212121',fs:16,fw:500,fc:'#212121',cr:5,qm:16,qp:20,qr:16,cs:12,cw:400,cc:'#757575'};
+var DEV_DEFAULTS={hs:19,hw:600,hc:'#212121',ds:14,dw:400,dc:'#212121',ls:15,lw:400,lc:'#212121',vs:16,vw:500,vc:'#212121',fs:16,fw:500,fc:'#212121',cr:5,qm:16,qp:20,qr:16,cs:12,cw:400,cc:'#757575',cwd:90,cpd:16,cht:0,cmh:0};
 function openDevPanel(){
   var s={};try{s=JSON.parse(localStorage.getItem('devSettings')||'{}');}catch(e){}
   var d=Object.assign({},DEV_DEFAULTS,s);
-  ['hs','hw','ds','dw','ls','lw','vs','vw','fs','fw','cr','qm','qp','qr','cs','cw'].forEach(function(k){document.getElementById('d-'+k).value=d[k];});
-  ['hc','dc','lc','vc','fc','cc'].forEach(function(k){document.getElementById('d-'+k).value=d[k];});
+  ['hs','hw','ds','dw','ls','lw','vs','vw','fs','fw','cr','qm','qp','qr','cs','cw'].forEach(function(k){var el=document.getElementById('d-'+k);if(el)el.value=d[k]!=null?d[k]:DEV_DEFAULTS[k];});
+  ['hc','dc','lc','vc','fc','cc'].forEach(function(k){var el=document.getElementById('d-'+k);if(el)el.value=d[k]||DEV_DEFAULTS[k];});
   applyDev();
   document.getElementById('devModal').classList.add('open');
 }
 function applyDev(){
   var r=document.documentElement.style;
-  var g=function(id){return document.getElementById(id).value;};
-  r.setProperty('--t-heading-size',g('d-hs')+'px');r.setProperty('--t-heading-weight',g('d-hw'));r.setProperty('--t-heading-color',g('d-hc'));
-  r.setProperty('--t-dl-size',g('d-ds')+'px');r.setProperty('--t-dl-weight',g('d-dw'));r.setProperty('--t-dl-color',g('d-dc'));
-  r.setProperty('--t-label-size',g('d-ls')+'px');r.setProperty('--t-label-weight',g('d-lw'));r.setProperty('--t-label-color',g('d-lc'));
-  r.setProperty('--t-value-size',g('d-vs')+'px');r.setProperty('--t-value-weight',g('d-vw'));r.setProperty('--t-value-color',g('d-vc'));
-  r.setProperty('--t-fare-size',g('d-fs')+'px');r.setProperty('--t-fare-weight',g('d-fw'));r.setProperty('--t-fare-color',g('d-fc'));
-  r.setProperty('--t-card-radius',g('d-cr')+'px');
-  r.setProperty('--qr-margin',g('d-qm')+'px');
-  r.setProperty('--qr-padding',g('d-qp')+'px');
-  r.setProperty('--qr-radius',g('d-qr')+'px');
-  document.getElementById('cur-qm').textContent=g('d-qm')+'px';
-  document.getElementById('cur-qp').textContent=g('d-qp')+'px';
-  document.getElementById('cur-qr').textContent=g('d-qr')+'px';
-  r.setProperty('--code-size',g('d-cs')+'px');
-  r.setProperty('--code-weight',g('d-cw'));
-  r.setProperty('--code-color',g('d-cc'));
-  document.getElementById('cur-cs').textContent=g('d-cs')+'px';
-  document.getElementById('cur-cw').textContent=g('d-cw');
-  document.getElementById('cur-hs').textContent=g('d-hs')+'px';document.getElementById('cur-hw').textContent=g('d-hw');
-  document.getElementById('cur-ds').textContent=g('d-ds')+'px';document.getElementById('cur-dw').textContent=g('d-dw');
-  document.getElementById('cur-ls').textContent=g('d-ls')+'px';document.getElementById('cur-lw').textContent=g('d-lw');
-  document.getElementById('cur-vs').textContent=g('d-vs')+'px';document.getElementById('cur-vw').textContent=g('d-vw');
-  document.getElementById('cur-fs').textContent=g('d-fs')+'px';document.getElementById('cur-fw').textContent=g('d-fw');
-  document.getElementById('cur-cr').textContent=g('d-cr')+'px';
+  var g=function(id){var el=document.getElementById(id);return el?el.value:null;};
+  var s=function(prop,val){if(val!==null)r.setProperty(prop,val);};
+  var t=function(id,val){var el=document.getElementById(id);if(el)el.textContent=val;};
+
+  s('--t-heading-size',g('d-hs')+'px'); s('--t-heading-weight',g('d-hw')); s('--t-heading-color',g('d-hc'));
+  s('--t-dl-size',g('d-ds')+'px');      s('--t-dl-weight',g('d-dw'));       s('--t-dl-color',g('d-dc'));
+  s('--t-label-size',g('d-ls')+'px');   s('--t-label-weight',g('d-lw'));    s('--t-label-color',g('d-lc'));
+  s('--t-value-size',g('d-vs')+'px');   s('--t-value-weight',g('d-vw'));    s('--t-value-color',g('d-vc'));
+  s('--t-fare-size',g('d-fs')+'px');    s('--t-fare-weight',g('d-fw'));     s('--t-fare-color',g('d-fc'));
+  s('--t-card-radius',g('d-cr')+'px');
+  s('--qr-margin',g('d-qm')+'px');
+  s('--qr-padding',g('d-qp')+'px');
+  s('--qr-radius',g('d-qr')+'px');
+  s('--code-size',g('d-cs')+'px');
+  s('--code-weight',g('d-cw'));
+  s('--code-color',g('d-cc'));
+
+  t('cur-hs',g('d-hs')+'px');  t('cur-hw',g('d-hw'));
+  t('cur-ds',g('d-ds')+'px');  t('cur-dw',g('d-dw'));
+  t('cur-ls',g('d-ls')+'px');  t('cur-lw',g('d-lw'));
+  t('cur-vs',g('d-vs')+'px');  t('cur-vw',g('d-vw'));
+  t('cur-fs',g('d-fs')+'px');  t('cur-fw',g('d-fw'));
+  t('cur-cr',g('d-cr')+'px');
+  t('cur-qm',g('d-qm')+'px');
+  t('cur-qp',g('d-qp')+'px');
+  t('cur-qr',g('d-qr')+'px');
+  t('cur-cs',g('d-cs')+'px');  t('cur-cw',g('d-cw'));
 }
+
 function saveDevSettings(){
-  var g=function(id){return document.getElementById(id).value;};
+  var g=function(id){var el=document.getElementById(id);return el?el.value:null;};
   var s={hs:g('d-hs'),hw:g('d-hw'),hc:g('d-hc'),ds:g('d-ds'),dw:g('d-dw'),dc:g('d-dc'),ls:g('d-ls'),lw:g('d-lw'),lc:g('d-lc'),vs:g('d-vs'),vw:g('d-vw'),vc:g('d-vc'),fs:g('d-fs'),fw:g('d-fw'),fc:g('d-fc'),cr:g('d-cr'),qm:g('d-qm'),qp:g('d-qp'),qr:g('d-qr'),cs:g('d-cs'),cw:g('d-cw'),cc:g('d-cc')};
   try{localStorage.setItem('devSettings',JSON.stringify(s));}catch(e){}
   document.getElementById('devModal').classList.remove('open');
@@ -744,9 +762,8 @@ function saveDevSettings(){
 }
 function resetDevDefaults(){
   var d=DEV_DEFAULTS;
-  ['hs','hw','ds','dw','ls','lw','vs','vw','fs','fw','cr','qm','qp','qr','cs','cw'].forEach(function(k){document.getElementById('d-'+k).value=d[k];});
-  document.getElementById('d-hc').value=d.hc;document.getElementById('d-dc').value=d.dc;
-  document.getElementById('d-lc').value=d.lc;document.getElementById('d-vc').value=d.vc;document.getElementById('d-fc').value=d.fc;
+  ['hs','hw','ds','dw','ls','lw','vs','vw','fs','fw','cr','qm','qp','qr','cs','cw'].forEach(function(k){var el=document.getElementById('d-'+k);if(el)el.value=d[k]!=null?d[k]:DEV_DEFAULTS[k];});
+  ['hc','dc','lc','vc','fc','cc'].forEach(function(k){var el=document.getElementById('d-'+k);if(el)el.value=DEV_DEFAULTS[k];});
   applyDev();
   try{localStorage.removeItem('devSettings');}catch(e){}
 }
