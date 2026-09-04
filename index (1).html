@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch This</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #prank-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    /* floating action banner to force valid user gesture */
+    #sound-btn {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.05); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Video starts immediately -->
+  <video id="prank-video" autoplay muted playsinline loop preload="auto">
+    <!-- PASTE YOUR DIRECT VIDEO URL BELOW -->
+    <source src="/video.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Sound Toggle Button -->
+  <button id="sound-btn">🔊 Tap for Sound</button>
+
+  <script>
+    const video = document.getElementById('prank-video');
+    const soundBtn = document.getElementById('sound-btn');
+
+    // Enable sound via direct button tap
+    soundBtn.addEventListener('click', () => {
+      video.muted = false;
+      video.currentTime = 0; // Restart from start with audio
+      video.play();
+      soundBtn.style.display = 'none'; // Hide button after sound starts
+    });
+
+    // Fallback: If they tap anywhere else on the screen
+    document.body.addEventListener('click', (e) => {
+      if (video.muted) {
+        video.muted = false;
+        video.currentTime = 0;
+        video.play();
+        soundBtn.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
